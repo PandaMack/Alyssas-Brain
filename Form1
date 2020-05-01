@@ -1,0 +1,443 @@
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using System.Speech.Synthesis;
+using System.Speech.Recognition;
+using System.Diagnostics;
+using System.Media;
+using System.Xml;
+using System.Management;
+using System.Runtime.InteropServices;
+using WindowsInput;
+using WindowsInput.Native;
+using System.Net.NetworkInformation;
+using DarrenLee.SpeechSynthesis;
+using System.IO;
+
+namespace WindowsFormsApp1
+{ 
+    public partial class Alyssa : Form
+    {
+
+        SpeechSynthesizer speech = new SpeechSynthesizer();
+        Choices list = new Choices();
+        public bool isAwake;
+        public bool searching;
+        private string version = "1.2 Alpha";
+        public int _ticks;
+        InputSimulator sim = new InputSimulator();
+        public bool connectionOfflineCheckAlreadyChecked = false;
+        public bool connectionOnlineCheckAlreadyChecked = false;
+
+        //This section of for adding programs to open and their file directories
+        public bool isRequestingProgram = false;
+        public String Steam = @"C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Steam\Steam.lnk";
+
+    public Alyssa()
+        {
+            InitializeComponent();
+            SpeechRecognitionEngine rec = new SpeechRecognitionEngine();
+            
+            
+            foreach (InstalledVoice voice in speech.GetInstalledVoices())
+            {
+                VoiceInfo info = voice.VoiceInfo;
+                Console.WriteLine(" Voice Name: " + info.Name);
+            }
+
+            speech.SelectVoice("Microsoft Zira Desktop"); //Change the voice for Alyssa
+
+            list.Add(System.IO.File.ReadAllLines(@"C:\Users\shark\OneDrive\Documents\Alena\grammar.txt"));
+            /*SoundPlayer splashScreenSoundEffect = new SoundPlayer(@"C:\Users\shark\OneDrive\Documents\Alena\New folder\splashScreenStartUpSound.wav");
+            splashScreenSoundEffect.Play();*/
+            speech.Speak("Hello, My name is alyssa.");
+            /*System.Threading.Thread.Sleep(2000);
+            pictureBox1.Show();*/
+
+
+
+            Grammar gr = new Grammar(new GrammarBuilder(list));
+            
+            try
+            {
+                rec.RequestRecognizerUpdate();
+                rec.LoadGrammar(gr);
+                rec.SpeechRecognized += rec_SpeachRecognized;
+                rec.SetInputToDefaultAudioDevice();
+                rec.RecognizeAsync(RecognizeMode.Multiple);
+
+            }
+            catch { return; }
+        }
+
+        public void say(String h)
+        {
+            speech.Speak(h);
+            youTextBox.AppendText(h + System.Environment.NewLine);
+        }
+
+
+
+        public void rec_SpeachRecognized(object sender, SpeechRecognizedEventArgs e)
+        {
+            SoundPlayer alyssaAwakeSound = new SoundPlayer(@"C:\Users\shark\OneDrive\Documents\Alena\New folder\alyysaAwakeSound.wav");
+            alyssaLabel.Text = "ALYSSA: awake";
+            String r = e.Result.Text;
+
+
+            if (r == "hey alyssa") //These are all the commands she can currently do
+            {
+                alyssaAwakeSound.Play();
+                _ticks++;
+                timer1.Start();
+                isAwake = true;
+            }
+            if (searching)
+            {
+                Process.Start(@"https://www.google.com/#q=" + r);
+                say("Searching for" + r);
+                searching = false;
+            }
+
+
+            if (isAwake == true && searching == false)
+            {
+                if (r == "what is your name")
+                {
+                    say("My name is Alyssa");
+                    _ticks = 0;
+
+                }
+                if (r == "open google")
+                {
+                    Process.Start("https://google.com");
+                    say("Opening Google");
+                    _ticks = 0;
+                }
+                if (r == "open steam")
+                {
+                    Process.Start(Steam);
+                    say("Opening Steam");
+                    _ticks = 0;
+                }
+                if (r == "open gta five")
+                {
+                    Process.Start(@"C:\Program Files\Rockstar Games\Grand Theft Auto V\PlayGTAV.exe");
+                    say("opening Grand theft auto five");
+                    _ticks = 0;
+                }
+                if (r == "close window")
+                {
+                    SendKeys.Send("%{F4}");
+                    say("Closing current process");
+                    _ticks = 0;
+                }
+                if (r == "open youtube")
+                {
+                    Process.Start(@"https://www.youtube.com/");
+                    say("opening youtube");
+                    _ticks = 0;
+                }
+                if (r == "open outlook" || r == "open mail")
+                {
+                    Process.Start(@"https://outlook.live.com/mail/0/inbox");
+                    say("opening outlook.com");
+                    _ticks = 0;
+                }
+                if (r == "open facebook")
+                {
+                    Process.Start(@"https://www.facebook.com/");
+                    say("opening facebook");
+                    _ticks = 0;
+                }
+                if (r == "open twitter")
+                {
+                    Process.Start(@"https://www.twitter.com/");
+                    say("opening twitter");
+                    _ticks = 0;
+                }
+                if (r == "open grammar")
+                {
+                    Process.Start(@"C:\Users\shark\OneDrive\Documents\Alena\grammar.txt");
+                    say("opening my grammer knowledge");
+                    _ticks = 0;
+                }
+                if (r == "open control panel")
+                {
+                    Process.Start(@"C:\Users\shark\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\System Tools\Control Panel.lnk");
+                    say("opening the control panel");
+                    _ticks = 0;
+                }
+                if (r == "open sound settings")
+                {
+                    Process.Start(@"C:\Windows\ImmersiveControlPanel\SystemSettings.exe");
+                    say("opening your sound settings");
+                    _ticks = 0;
+                }
+                if (r == "open device manager")
+                {
+                    Process.Start(@"C:\Windows\System32\mmc.exe");
+                    say("opening your device manager");
+                    _ticks = 0;
+                }
+                if (r == "open files" || r == "open file explorer")
+                {
+                    Process.Start(@"C:\Windows\explorer.exe");
+                    say("opening file explorer");
+                    _ticks = 0;
+                }
+                if (r == "open reddit")
+                {
+                    Process.Start(@"https://www.reddit.com/");
+                    say("opening reddit");
+                    say("opening reddit");
+                    _ticks = 0;
+                }
+                if (r == "open ableton")
+                {
+                    Process.Start(@"C:\Users\shark\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Ableton Live 10 Trial.lnk");
+                    say("opening Ableton live, have fun making music sir!");
+                    _ticks = 0;
+                }
+                if (r == "open netflix")
+                {
+                    Process.Start(@"https://netflix.com");
+                    say("opening netflix.com, enjoy your show sir");
+                    _ticks = 0;
+                }
+                if (r == "open hulu")
+                {
+                    Process.Start(@"https://hulu.com");
+                    say("opening hulu.com, enjoy your show sir");
+                    _ticks = 0;
+                }
+                if (r == "open amazon prime video" || r == "open amazon video")
+                {
+                    Process.Start(@"https://www.amazon.com/ap/signin?accountStatusPolicy=P1&clientContext=134-5142133-5141716&language=en_US&openid.assoc_handle=amzn_prime_video_desktop_us&openid.claimed_id=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0%2Fidentifier_select&openid.identity=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0%2Fidentifier_select&openid.mode=checkid_setup&openid.ns=http%3A%2F%2Fspecs.openid.net%2Fauth%2F2.0&openid.ns.pape=http%3A%2F%2Fspecs.openid.net%2Fextensions%2Fpape%2F1.0&openid.pape.max_auth_age=0&openid.return_to=https%3A%2F%2Fwww.primevideo.com%2Fauth%2Freturn%2Fref%3Dav_auth_ap%3F_encoding%3DUTF8%26location%3D%252Fref%253Ddv_auth_ret");
+                    say("opening amazon prime video, enjoy your show sir");
+                    _ticks = 0;
+                }
+                if (r == "open origin")
+                {
+                    Process.Start(@"C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Origin\Origin.lnk");
+                    say("opening origin");
+                    _ticks = 0;
+                }
+                if (r == "open visual studio")
+                {
+                    Process.Start(@"C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Visual Studio 2019.lnk");
+                    say("opening visual studio");
+                    _ticks = 0;
+                } 
+                if (r == "am i connected to wifi" || r == "am i connected to the internet" || r == "whats my wifi status" || r == "wifi status")
+                {
+                    bool connection = NetworkInterface.GetIsNetworkAvailable();
+                    if (connection)
+                    {
+                        say("Wifi seems to be working on my end sir");
+
+                    }
+                    else
+                    {
+                        say("sorry sir, wifi doesnt seem to be connected");
+                    }
+
+                    _ticks = 0;
+                }
+                if (r == "open unity")
+                {
+                    Process.Start(@"C:\ProgramData\Microsoft\Windows\Start Menu\Programs\Unity Hub.lnk");
+                    say("opening unity");
+                    _ticks = 0;
+                }
+                if (r == "what time is it")
+                {
+                    string time = DateTime.Now.ToString("h:mm tt");
+                    say(time);
+                    _ticks = 0;
+                }
+                if (r == "what day is it" || r =="whats the date")
+                {
+                    string date = DateTime.UtcNow.ToString("D");
+                    say("the date today is" + date);
+                    _ticks = 0;
+                }
+                if (r == "what version is this")
+                {
+                    say("my current version is " + version);
+                    _ticks = 0;
+                }
+                if (r == "copy" || r == "copy this" || r == "copy text")
+                {
+                    sim.Keyboard.ModifiedKeyStroke(VirtualKeyCode.LCONTROL, VirtualKeyCode.VK_C);
+                    say("text copied to clipboard");
+                    _ticks = 0;
+                }
+                if (r == "paste" || r == "paste this" || r == "paste text")
+                {
+                    sim.Keyboard.ModifiedKeyStroke(VirtualKeyCode.LCONTROL, VirtualKeyCode.VK_V);
+                    say("pasted");
+                    _ticks = 0;
+                }
+                if (r == "open your trello board")
+                {
+                    Process.Start(@"https://trello.com/b/Qh0VXIlm/alyssa-ai-ideas");
+                    say("opening the trello board for my future updates");
+                    _ticks = 0;
+                }
+                if (r == "open disturbed")
+                {
+                    Process.Start(@"C:\Users\shark\Desktop\Disturbed_1.4.7.5.exe");
+                    say("opening disturbed hack for gta online");
+                    _ticks = 0;
+                }
+                if (r == "open vpn" || r == "open nord vpn")
+                {
+                    Process.Start(@"C:\ProgramData\Microsoft\Windows\Start Menu\Programs\NordVPN\NordVPN.lnk");
+                    say("opening opening nord vpn");
+                    _ticks = 0;
+                }
+                if (r == "minimize window" || r == "hide window")
+                {
+                    SendKeys.Send("% " + "n");
+                    _ticks = 0;
+                }
+                if (r == "maximize window" || r == "fullscreen window")
+                {
+                    sim.Keyboard.ModifiedKeyStroke(VirtualKeyCode.LWIN, VirtualKeyCode.UP);
+                    _ticks = 0;
+                }
+                if (r == "go away" || r == "move")
+                {
+                    WindowState = FormWindowState.Minimized;
+                    say("My apologies");
+                    _ticks = 0;
+                }
+                if (r == "stop listening")
+                {
+                    isAwake = false;
+                    _ticks = 10;
+                }
+                if (r== "show yourself" || r=="where are you")
+                {
+                    if(WindowState == FormWindowState.Minimized)
+                    {
+                        WindowState = FormWindowState.Normal;
+                        say("sorry about that, here i am");
+                        _ticks = 0;
+                    }
+                    else
+                    {
+                        say("Im already on your screen sir");
+                        _ticks = 0;
+                    }
+                }
+                if(r == "search for")
+                {
+                    searching = true;
+                }
+                alyssaTextBox.AppendText(r + System.Environment.NewLine);
+            }
+
+        }
+        
+
+        public void Form1_Load(object sender, EventArgs e)
+        {
+            Timer timer = new Timer();
+            timer.Interval = (1000);
+            timer.Tick += new EventHandler(timer_Tick);
+            timer.Start();
+
+            StreamReader streamreader = new StreamReader(@"C:\Users\shark\OneDrive\Documents\Alena\programs.txt");
+            string programs = streamreader.ReadToEnd();
+            string[] programsToSplit = programs.Split('\n');
+            foreach (string printProgramsToComboBox in programsToSplit)
+            {
+                comboBoxProgramList.Items.Add(printProgramsToComboBox);
+            }
+              
+
+
+            if (isAwake == false)
+            {
+                return;
+            }
+            
+        }
+
+        public void timer_Tick(object sender, EventArgs e)
+        {
+
+            string time = DateTime.Now.ToString("h:mm:ss tt");
+            string date = DateTime.UtcNow.ToString("D");
+            timeLabel.Text = time.ToString();
+            dateLabel.Text = date.ToString();
+            bool connection = NetworkInterface.GetIsNetworkAvailable();
+
+            if (connection == false && connectionOfflineCheckAlreadyChecked == false)
+            {
+                wifiConection.Text = "WiFi Connection: Off";
+                say("sorry sir wifi doesnt seem to be working");
+                connectionOfflineCheckAlreadyChecked = true;
+                connectionOnlineCheckAlreadyChecked = false;
+            }
+            else if (connection == true &&connectionOnlineCheckAlreadyChecked == false)
+            {
+                wifiConection.Text = "WiFi Connection: On";
+                say("wifi is online");
+                connectionOfflineCheckAlreadyChecked = false;
+                connectionOnlineCheckAlreadyChecked = true;
+            }
+
+            
+        }
+        private void timer1_Tick(object sender, EventArgs e)
+        {
+            _ticks++;
+            cpuTempLabel.Text = _ticks.ToString();
+            SoundPlayer alyssaAsleepSound = new SoundPlayer(@"C:\Users\shark\OneDrive\Documents\Alena\New folder\alyysaAsleepSound.wav");
+            if (_ticks >= 10)
+            {
+                alyssaAsleepSound.Play();
+                alyssaLabel.Text = "ALYSSA: asleep";
+                isAwake = false;
+                timer1.Stop();
+                _ticks = 0;
+            }
+        }
+
+        private void label1_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void youTextBox_TextChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void alyssaTextBox_TextChanged(object sender, EventArgs e)
+        {
+
+        }
+        
+
+        private void label2_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void label1_Click_1(object sender, EventArgs e)
+        {
+
+        }
+
+    }
+}
